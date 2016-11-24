@@ -1,0 +1,39 @@
+{
+  "name": "storybook-windowhooks",
+  "version": "1.0.0",
+  "description": "A decorator for storybook to expose component hooks on the global window object.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeremyhewett/storybook-windowhooks.git"
+  },
+  "keywords": [
+    "react",
+    "storybook",
+    "decorator",
+    "webdriver",
+    "webdriverio",
+    "protractor",
+    "selenium"
+  ],
+  "author": "Jeremy Hewett",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jeremyhewett/storybook-windowhooks/issues"
+  },
+  "homepage": "https://github.com/jeremyhewett/storybook-windowhooks#readme",
+  "dependencies": {
+    "sinon": "^2.0.0-pre.4"
+  },
+  "peerDependencies": {
+    "@kadira/storybook": "^2.32.1",
+    "react": "^15.4.1",
+    "react-dom": "^15.4.1"
+  },
+  "devDependencies": {
+    
+  }
+}
