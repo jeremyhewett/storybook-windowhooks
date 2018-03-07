@@ -2,84 +2,92 @@ import React from 'react';
 import sinon from 'sinon';
 
 class Wrapper extends React.Component {
-
   constructor(props, context) {
     super(props, context);
-    this.element = props.story();
-    this.childProps = {
-      ref: ref => this.ref = ref,
-      key: true
+    this.story = props.story();
+
+    this.state = {};
+
+    this.handles = {
+      reset: () => {
+        this.setState({ key: !this.state.key });
+        this.initialize();
+        this.forceUpdate();
+      },
     };
+
+    window[this.story.type.name] = this.handles;
+    for (const key of Object.keys(this.props.config)) {
+      this.props.config[key].expose(this, key);
+    }
+
+  }
+
+  componentDidMount() {
     this.initialize();
   }
 
   initialize() {
-    this.windowProps = {
-      update: () => this.forceUpdate(),
-      reset: () => {
-        this.childProps.key = !this.childProps.key;
-        this.initialize();
-        this.forceUpdate();
-      }
-    };
-    window[this.element.type.name] = this.windowProps;
-
-    for (let key in this.props.config) {
-      this.props.config[key].apply(this, key);
+    for (const key of Object.keys(this.props.config)) {
+      this.props.config[key].init(this, key);
     }
   }
 
+  isPropUndefinedOrDefault = key =>
+    typeof this.story.props[key] === 'undefined' ||
+    (this.story.type.defaultProps && this.story.props[key] === this.story.type.defaultProps[key]);
+
   render() {
-    return (<this.element.type {...this.element.props} {...this.childProps}></this.element.type>);
+    return <this.story.type {...this.story.props} {...this.state} ref={r => this.ref = r}/>;
   }
 }
 
 export class Input {
-  constructor(defaultValue) {
-    this.defaultValue = defaultValue;
+  constructor(initialValue) {
+    this.initialValue = initialValue;
   }
 
-  apply(wrapper, key) {
-    wrapper.childProps[key] = this.defaultValue;
-    Object.defineProperty(wrapper.windowProps, key, {
-      get: () => wrapper.childProps[key],
-      set: (value) => {
-        wrapper.childProps[key] = value;
-        wrapper.windowProps.update();
-      }
+  expose(wrapper, key) {
+    Object.defineProperty(wrapper.handles, key, {
+      get: () => wrapper.state[key],
+      set: value => {
+        wrapper.setState({ [key]: value });
+      },
     });
+  }
+
+  init(wrapper, key) {
+    wrapper.setState({ [key]: wrapper.isPropUndefinedOrDefault(key) && typeof this.initialValue !== "undefined"
+      ? this.initialValue
+      : wrapper.story.props[key] });
   }
 }
 
 export class Action {
-  constructor() { }
-
-  apply(wrapper, key) {
-    wrapper.windowProps[key] = (...args) => wrapper.ref[key](...args);
+  expose(wrapper, key) {
+    wrapper.handles[key] = (...args) => wrapper.ref[key](...args);
   }
+
+  init(wrapper, key) {}
 }
 
 export class Callback {
-  constructor() { }
-
-  apply(wrapper, key) {
-    wrapper.windowProps[key] = sinon.spy();
-    wrapper.childProps[key] = (e) => wrapper.windowProps[key](e);
-  }
-}
-
-export class Literal {
-  constructor(value) {
-    this.value = value;
+  constructor(fake) {
+    this.fake = fake;
   }
 
-  apply(wrapper, key) {
-    wrapper.childProps[key] = this.value;
+  expose(wrapper, key) {
+    Object.defineProperty(wrapper.handles, key, {
+      get: () => this.spy
+    });
+  }
+
+  init(wrapper, key) {
+    this.spy = sinon.spy(wrapper.story.props[key] || this.fake);
+    wrapper.setState({ [key]: (...args) => this.spy(...args) });
   }
 }
 
 export function windowHandles(config) {
-  return (story) => {
-    return <Wrapper story={story} config={{...config}} />;
-  };
+  return story => <Wrapper story={story} config={{ ...config }} />;
 }
